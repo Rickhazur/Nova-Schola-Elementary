@@ -1,21 +1,47 @@
 import React, { useState } from 'react';
 import { loginWithSupabase, logoutSupabase } from './services/supabase';
 import Sidebar from './components/Sidebar';
-import { Language, ViewState } from './types';
+import Dashboard from './components/Dashboard';
+import Curriculum from './components/Curriculum';
+import AIConsultant from './components/AIConsultant';
+import SocialHub from './components/SocialHub';
+import RewardsStore from './components/RewardsStore';
+import Whiteboard from './components/Whiteboard';
+import Repository from './components/Repository';
+import Progress from './components/Progress';
+import Settings from './components/Settings';
+import Metrics from './components/Metrics';
+import Schedule from './components/Schedule';
+import Flashcards from './components/Flashcards';
+import DiagnosticTest from './components/DiagnosticTest';
+import { Language, ViewState, StoreItem } from './types';
 import { Brain, ShieldCheck, Smartphone } from 'lucide-react';
 import { useAppContext } from './context/AppContext';
 import { safeAsync } from './utils/errorHandler';
+
+const DEFAULT_STORE_ITEMS: StoreItem[] = [
+  { id: 's1', name: 'Estrella Dorada', cost: 50, category: 'avatar', image: '⭐', owned: false },
+  { id: 's2', name: 'Cohete', cost: 100, category: 'avatar', image: '🚀', owned: false },
+  { id: 's3', name: 'Corona', cost: 200, category: 'avatar', image: '👑', owned: false },
+];
 
 const App: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { user, currentView, language, isSessionLoading } = state;
 
-  // Login form state (local — not needed in global context)
+  // Login form state
   const [loginMode, setLoginMode] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
   const [studentForm, setStudentForm] = useState({ email: '', guardianPhone: '', password: '' });
   const [adminForm, setAdminForm] = useState({ email: '', password: '' });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // App state
+  const [coins, setCoins] = useState(0);
+  const [storeItems, setStoreItems] = useState<StoreItem[]>(DEFAULT_STORE_ITEMS);
+  const [uploadedHomework, setUploadedHomework] = useState<any[]>([]);
+
+  const setLanguage = (lang: Language) => dispatch({ type: 'SET_LANGUAGE', payload: lang });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +88,17 @@ const App: React.FC = () => {
     dispatch({ type: 'SET_VIEW', payload: view });
   };
 
+  const handlePurchase = (item: StoreItem) => {
+    if (coins >= item.cost) {
+      setCoins(c => c - item.cost);
+      setStoreItems(items => items.map(i => i.id === item.id ? { ...i, owned: true } : i));
+    }
+  };
+
+  const handleUploadHomework = (_file: File) => {
+    setUploadedHomework(prev => [...prev, { name: _file.name, timestamp: Date.now() }]);
+  };
+
   // Translations
   const t = {
     es: {
@@ -82,7 +119,6 @@ const App: React.FC = () => {
   } as const;
   const text = t[language] ?? t['es'];
 
-  // Show loading spinner while session is being restored
   if (isSessionLoading) {
     return (
       <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center">
@@ -91,7 +127,6 @@ const App: React.FC = () => {
     );
   }
 
-  // Show login form when not authenticated
   if (!user) {
     return (
       <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center p-6 font-sans relative overflow-hidden">
@@ -206,7 +241,82 @@ const App: React.FC = () => {
     );
   }
 
-  // Main app
+  const renderView = () => {
+    switch (currentView) {
+      case ViewState.DASHBOARD:
+        return <Dashboard onNavigate={handleViewChange} language={language} />;
+      case ViewState.CURRICULUM:
+        return (
+          <Curriculum
+            userName={user.name}
+            language={language}
+            userRole={user.role}
+            onLogout={handleLogout}
+            userId={user.uid}
+            uploadedHomework={uploadedHomework}
+          />
+        );
+      case ViewState.AI_CONSULTANT:
+        return <AIConsultant />;
+      case ViewState.SOCIAL:
+        return <SocialHub />;
+      case ViewState.REWARDS:
+        return (
+          <RewardsStore
+            userLevel="KIDS"
+            currentCoins={coins}
+            items={storeItems}
+            onPurchase={handlePurchase}
+          />
+        );
+      case ViewState.WHITEBOARD:
+        return <Whiteboard />;
+      case ViewState.REPOSITORY:
+        return (
+          <Repository
+            studentName={user.name}
+            onUploadHomework={handleUploadHomework}
+            userRole={user.role}
+          />
+        );
+      case ViewState.PROGRESS:
+        return (
+          <Progress
+            userRole={user.role}
+            userId={user.uid}
+            userName={user.name}
+          />
+        );
+      case ViewState.SETTINGS:
+        return (
+          <Settings
+            userId={user.uid}
+            userName={user.name}
+            userRole={user.role}
+            onUpdateUser={(name) => dispatch({ type: 'SET_USER', payload: { ...user, name } })}
+            onLogout={handleLogout}
+            language={language}
+            onLanguageChange={setLanguage}
+          />
+        );
+      case ViewState.METRICS:
+        return <Metrics />;
+      case ViewState.SCHEDULE:
+        return <Schedule />;
+      case ViewState.FLASHCARDS:
+        return <Flashcards />;
+      case ViewState.DIAGNOSTIC:
+        return (
+          <DiagnosticTest
+            studentName={user.name}
+            onFinish={(view) => dispatch({ type: 'SET_VIEW', payload: view })}
+          />
+        );
+      default:
+        return <Dashboard onNavigate={handleViewChange} language={language} />;
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar
@@ -215,10 +325,12 @@ const App: React.FC = () => {
         onLogout={handleLogout}
         userName={user.name}
         userRole={user.role}
+        language={language === 'bilingual' ? 'es' : language}
+        setLanguage={setLanguage}
+        userLevel={user.level}
       />
-      <main className="flex-1 p-6">
-        <h1 className="text-2xl font-bold mb-4">Bienvenido, {user.name}</h1>
-        {currentView === ViewState.DASHBOARD && <div>Dashboard content aquí</div>}
+      <main className="flex-1 md:ml-64 p-6 overflow-y-auto">
+        {renderView()}
       </main>
     </div>
   );
