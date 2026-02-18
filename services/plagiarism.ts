@@ -40,11 +40,10 @@ Respond in JSON format with an array of matches:
 
 Be strict: even minor word changes should be flagged if the sentence structure is the same.`;
 
-      const response = await fetch('https://api.abacus.ai/api/v0/chatLLM', {
+      const response = await fetch('/api/abacus', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.ABACUS_API_KEY || ''}`
         },
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }],

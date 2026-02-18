@@ -1,115 +1,98 @@
-import React, { useState, useEffect } from 'react';
-import { supabase, loginWithSupabase, logoutSupabase } from './services/supabase';
+import React, { useState } from 'react';
+import { loginWithSupabase, logoutSupabase } from './services/supabase';
 import Sidebar from './components/Sidebar';
-import { ViewState, UserLevel, Language } from './types';
-import {
-  Brain,
-  ShieldCheck,
-  Smartphone,
-} from 'lucide-react';
+import { Language, ViewState } from './types';
+import { Brain, ShieldCheck, Smartphone } from 'lucide-react';
+import { useAppContext } from './context/AppContext';
+import { safeAsync } from './utils/errorHandler';
 
 const App: React.FC = () => {
-  // Estados de autenticación y usuario
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userId, setUserId] = useState<string>('');
-  const [userName, setUserName] = useState<string>('');
-  const [userRole, setUserRole] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
-  const [userLevel, setUserLevel] = useState<UserLevel>('primary');
-  const [language, setLanguage] = useState<Language>('es');
+  const { state, dispatch } = useAppContext();
+  const { user, currentView, language, isSessionLoading } = state;
 
-  // Formulario login
+  // Login form state (local — not needed in global context)
   const [loginMode, setLoginMode] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
   const [studentForm, setStudentForm] = useState({ email: '', guardianPhone: '', password: '' });
   const [adminForm, setAdminForm] = useState({ email: '', password: '' });
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Vista actual
-  const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);
-
-  // Verificar sesión activa al cargar
-  useEffect(() => {
-    const session = supabase?.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        const user = data.session.user;
-        setIsAuthenticated(true);
-        setUserId(user.id);
-        setUserName(user.user_metadata?.name || user.email?.split('@')[0] || '');
-        setUserRole(user.user_metadata?.role || 'STUDENT');
-      }
-    });
-  }, []);
-
-  // Manejar login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
 
-    try {
-      let email = '';
-      let password = '';
-      if (loginMode === 'STUDENT') {
-        email = studentForm.email;
-        password = studentForm.password;
-        if (!studentForm.guardianPhone.trim()) {
-          alert('Por favor ingresa el WhatsApp del acudiente.');
-          return;
-        }
-      } else {
-        email = adminForm.email;
-        password = adminForm.password;
-      }
+    const email = loginMode === 'STUDENT' ? studentForm.email : adminForm.email;
+    const password = loginMode === 'STUDENT' ? studentForm.password : adminForm.password;
 
-      const userData = await loginWithSupabase(email, password, loginMode);
-      if (userData) {
-        setIsAuthenticated(true);
-        setUserId(userData.uid);
-        setUserName(userData.name);
-        setUserRole(userData.role === 'ADMIN' ? 'ADMIN' : 'STUDENT');
-        setUserLevel(userData.level as UserLevel || 'primary');
-        setCurrentView(ViewState.DASHBOARD);
-      }
-    } catch (error) {
-      alert('Login fallido. Verifica tus credenciales.');
-      console.error(error);
+    if (loginMode === 'STUDENT' && !studentForm.guardianPhone.trim()) {
+      setLoginError('Por favor ingresa el WhatsApp del acudiente.');
+      return;
     }
+
+    setIsLoggingIn(true);
+    const { data: userData, error } = await safeAsync(() =>
+      loginWithSupabase(email, password, loginMode)
+    );
+    setIsLoggingIn(false);
+
+    if (error || !userData) {
+      setLoginError('Login fallido. Verifica tus credenciales.');
+      return;
+    }
+
+    dispatch({
+      type: 'SET_USER',
+      payload: {
+        uid: userData.uid,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role === 'ADMIN' ? 'ADMIN' : 'STUDENT',
+        level: userData.level ?? 'primary',
+      },
+    });
+    dispatch({ type: 'SET_VIEW', payload: ViewState.DASHBOARD });
   };
 
-  // Manejar logout
   const handleLogout = async () => {
     await logoutSupabase();
-    setIsAuthenticated(false);
-    setUserId('');
-    setUserName('');
-    setUserRole('STUDENT');
-    setUserLevel('primary');
-    setStudentForm({ email: '', guardianPhone: '', password: '' });
-    setAdminForm({ email: '', password: '' });
-    setCurrentView(ViewState.DASHBOARD);
+    dispatch({ type: 'CLEAR_USER' });
   };
 
-  // Traducciones básicas
+  const handleViewChange = (view: ViewState) => {
+    dispatch({ type: 'SET_VIEW', payload: view });
+  };
+
+  // Translations
   const t = {
     es: {
-      student: 'Estudiante',
-      admin: 'Administrador',
-      mail: 'Correo electrónico',
-      guardian: 'WhatsApp acudiente',
-      pass: 'Contraseña',
-      login: 'Iniciar Sesión',
-      access: 'Entrar al Panel',
+      student: 'Estudiante', admin: 'Administrador',
+      mail: 'Correo electrónico', guardian: 'WhatsApp acudiente',
+      pass: 'Contraseña', login: 'Iniciar Sesión', access: 'Entrar al Panel',
     },
     en: {
-      student: 'Student',
-      admin: 'Admin',
-      mail: 'Email',
-      guardian: 'Parent WhatsApp',
-      pass: 'Password',
-      login: 'Login',
-      access: 'Enter Dashboard',
+      student: 'Student', admin: 'Admin',
+      mail: 'Email', guardian: 'Parent WhatsApp',
+      pass: 'Password', login: 'Login', access: 'Enter Dashboard',
     },
-  };
-  const text = t[language];
+    bilingual: {
+      student: 'Student / Estudiante', admin: 'Admin',
+      mail: 'Email / Correo', guardian: 'Parent WhatsApp',
+      pass: 'Password / Contraseña', login: 'Login', access: 'Enter Dashboard',
+    },
+  } as const;
+  const text = t[language] ?? t['es'];
 
-  // Mostrar formulario login si no autenticado
-  if (!isAuthenticated) {
+  // Show loading spinner while session is being restored
+  if (isSessionLoading) {
+    return (
+      <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Show login form when not authenticated
+  if (!user) {
     return (
       <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center p-6 font-sans relative overflow-hidden">
         <div className="w-full max-w-[420px] mx-auto flex flex-col items-center relative z-10">
@@ -204,13 +187,18 @@ const App: React.FC = () => {
               </>
             )}
 
+            {loginError && (
+              <p className="text-red-600 text-sm font-medium">{loginError}</p>
+            )}
+
             <button
               type="submit"
-              className={`w-full py-3 rounded-md font-bold text-white mt-4 ${
-                loginMode === 'STUDENT' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-600 hover:bg-indigo-700'
-              }`}
+              disabled={isLoggingIn}
+              className={`w-full py-3 rounded-md font-bold text-white mt-4 transition-opacity ${
+                isLoggingIn ? 'opacity-60 cursor-not-allowed' : ''
+              } ${loginMode === 'STUDENT' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
             >
-              {loginMode === 'STUDENT' ? text.login : text.access}
+              {isLoggingIn ? 'Cargando...' : loginMode === 'STUDENT' ? text.login : text.access}
             </button>
           </form>
         </div>
@@ -218,19 +206,18 @@ const App: React.FC = () => {
     );
   }
 
-  // Mostrar app principal si autenticado
+  // Main app
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar
         currentView={currentView}
-        onViewChange={setCurrentView}
+        onViewChange={handleViewChange}
         onLogout={handleLogout}
-        userName={userName}
-        userRole={userRole}
+        userName={user.name}
+        userRole={user.role}
       />
       <main className="flex-1 p-6">
-        <h1 className="text-2xl font-bold mb-4">Bienvenido, {userName}</h1>
-        {/* Aquí renderiza las vistas según currentView */}
+        <h1 className="text-2xl font-bold mb-4">Bienvenido, {user.name}</h1>
         {currentView === ViewState.DASHBOARD && <div>Dashboard content aquí</div>}
       </main>
     </div>

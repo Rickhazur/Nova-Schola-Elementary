@@ -70,12 +70,11 @@ Make sure to:
 3. Change sentence structure
 4. Make the text clearer and more natural`;
 
-      // Call Abacus.AI Chat LLM
-      const response = await fetch('https://api.abacus.ai/api/v0/chatLLM', {
+      // Call Abacus.AI through server-side proxy
+      const response = await fetch('/api/abacus', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.ABACUS_API_KEY || ''}`
         },
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }],
