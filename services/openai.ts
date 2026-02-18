@@ -89,7 +89,13 @@ export class OpenAITutorSession {
                 if (msg.tool_calls) {
                     for (const toolCall of msg.tool_calls) {
                         if (toolCall.function.name === 'updateWhiteboard') {
-                            const args = JSON.parse(toolCall.function.arguments);
+                            let args: any;
+                            try {
+                                args = JSON.parse(toolCall.function.arguments);
+                            } catch (e) {
+                                console.error("Failed to parse tool arguments:", e);
+                                continue;
+                            }
                             this.onMessage({
                                 type: 'function_call',
                                 function: { name: 'updateWhiteboard', args }
@@ -185,7 +191,12 @@ export async function evaluateMathDiagnostic(studentName: string, questions: any
     );
 
     // Expected structure: { score, feedback, gaps, remedialClasses: [{ title, topic }] }
-    return JSON.parse(data.choices[0].message.content);
+    try {
+        return JSON.parse(data.choices[0].message.content);
+    } catch (e) {
+        console.error("Failed to parse diagnostic eval response:", e);
+        throw new Error("Invalid response format from AI");
+    }
 }
 
 // 5. Remedial Plan
@@ -196,7 +207,12 @@ export async function generateRemedialPlan(reportText: string) {
         "gpt-4o",
         true
     );
-    return JSON.parse(data.choices[0].message.content);
+    try {
+        return JSON.parse(data.choices[0].message.content);
+    } catch (e) {
+        console.error("Failed to parse remedial plan response:", e);
+        throw new Error("Invalid response format from AI");
+    }
 }
 
 // 6. Flashcards
@@ -207,7 +223,13 @@ export async function generateFlashcards(topic: string) {
         "gpt-4o",
         true
     );
-    const json = JSON.parse(data.choices[0].message.content);
+    let json: any;
+    try {
+        json = JSON.parse(data.choices[0].message.content);
+    } catch (e) {
+        console.error("Failed to parse flashcards response:", e);
+        return [];
+    }
     return json.cards || [];
 }
 
@@ -220,7 +242,7 @@ export async function generateParentEmailReport(studentName: string, data: any) 
         [{ role: "system", content: sysPrompt }, { role: "user", content: userPrompt }],
         "gpt-4o"
     );
-    return completion.choices[0].message.content;
+    return completion.choices?.[0]?.message?.content ?? '';
 }
 
 // Legacy export if needed, but discouraged

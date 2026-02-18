@@ -20,6 +20,7 @@ const Flashcards: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
 
     const handleNext = () => {
+        if (deck.length === 0) return;
         setIsFlipped(false);
         setTimeout(() => {
             setCurrentIndex((prev) => (prev + 1) % deck.length);
@@ -72,23 +73,29 @@ const Flashcards: React.FC = () => {
             </form>
 
             {/* Card Area */}
+            {deck.length === 0 ? (
+                <div className="h-80 flex items-center justify-center bg-white rounded-3xl shadow-xl border-2 border-stone-100">
+                    <p className="text-stone-400 text-lg">No hay tarjetas. ¡Genera un deck para comenzar!</p>
+                </div>
+            ) : (
             <div className="perspective-1000 h-80 cursor-pointer group" onClick={() => setIsFlipped(!isFlipped)}>
                 <div className={`relative w-full h-full transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
 
                     {/* FRONT */}
                     <div className="absolute inset-0 backface-hidden bg-white rounded-3xl shadow-xl border-2 border-stone-100 flex flex-col items-center justify-center p-8 text-center hover:border-indigo-200 transition-colors">
                         <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-4">Pregunta / Concepto</span>
-                        <h3 className="text-2xl font-bold text-stone-800">{deck[currentIndex].front}</h3>
+                        <h3 className="text-2xl font-bold text-stone-800">{deck[currentIndex]?.front}</h3>
                         <p className="text-stone-400 text-xs mt-8 absolute bottom-8">Click para voltear</p>
                     </div>
 
                     {/* BACK */}
                     <div className="absolute inset-0 backface-hidden bg-indigo-600 rounded-3xl shadow-xl flex flex-col items-center justify-center p-8 text-center rotate-y-180 text-white">
                         <span className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-4">Respuesta</span>
-                        <h3 className="text-2xl font-bold">{deck[currentIndex].back}</h3>
+                        <h3 className="text-2xl font-bold">{deck[currentIndex]?.back}</h3>
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Controls */}
             <div className="flex justify-center gap-4">

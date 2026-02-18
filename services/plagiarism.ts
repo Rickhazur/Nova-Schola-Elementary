@@ -14,7 +14,7 @@ export async function checkPlagiarism(
     const matches: PlagiarismCheck['results']['matches'] = [];
 
     for (const source of sources) {
-      const sourceText = source.highlights.join(' ');
+      const sourceText = (source.highlights || []).join(' ');
       if (!sourceText || sourceText.length < 20) continue;
 
       const prompt = `You are a plagiarism detection assistant for primary school children (ages 6-11).
@@ -55,7 +55,13 @@ Be strict: even minor word changes should be flagged if the sentence structure i
 
       if (response.ok) {
         const data = await response.json();
-        const result = JSON.parse(data.response || '{}');
+        let result: any = {};
+        try {
+          result = JSON.parse(data.response || '{}');
+        } catch (e) {
+          console.error('Failed to parse plagiarism response:', e);
+          continue;
+        }
 
         if (result.matches && result.matches.length > 0) {
           result.matches.forEach((match: any) => {

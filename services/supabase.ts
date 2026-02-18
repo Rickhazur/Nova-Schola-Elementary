@@ -24,11 +24,8 @@ export const loginWithSupabase = async (email: string, password: string, intende
     .eq("id", data.user!.id)
     .single();
 
-  let finalRole = profile?.role || intendedRole;
   const normalizedEmail = (data.user?.email || email).toLowerCase().trim();
-  if (normalizedEmail.includes('rickhazur') || normalizedEmail.includes('admin')) {
-    finalRole = 'ADMIN';
-  }
+  const finalRole = profile?.role || intendedRole;
 
   return {
     uid: data.user!.id,

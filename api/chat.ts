@@ -14,6 +14,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const { messages, model, tools, tool_choice, response_format, stream } = req.body;
 
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
+            return res.status(400).json({ error: "Invalid request: 'messages' must be a non-empty array." });
+        }
+
         if (stream) {
             res.setHeader('Content-Type', 'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');

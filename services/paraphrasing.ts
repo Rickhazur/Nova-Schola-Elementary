@@ -86,7 +86,12 @@ Make sure to:
 
       if (response.ok) {
         const data = await response.json();
-        const result = JSON.parse(data.response || '{}');
+        let result: any = {};
+        try {
+          result = JSON.parse(data.response || '{}');
+        } catch (e) {
+          console.error('Failed to parse paraphrase response:', e);
+        }
         
         paraphrasedVersions.push({
           text: result.paraphrasedText || originalText,

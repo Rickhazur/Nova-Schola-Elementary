@@ -28,7 +28,8 @@ const Schedule: React.FC<ScheduleProps> = ({ remedialSubject }) => {
   const [tasks, setTasks] = useState<SmartTask[]>(INITIAL_FLOW);
 
   useEffect(() => {
-      if (remedialSubject && remedialSubject.tracks.length > 0) {
+      if (remedialSubject && remedialSubject.tracks.length > 0 &&
+          remedialSubject.tracks[0].modules && remedialSubject.tracks[0].modules.length > 0) {
           const remedialClasses = remedialSubject.tracks[0].modules[0].classes;
           if (remedialClasses.length > 0) {
               const newRoutine: SmartTask[] = [
@@ -63,7 +64,7 @@ const Schedule: React.FC<ScheduleProps> = ({ remedialSubject }) => {
     }
   };
 
-  const progress = Math.round(((tasks.length - tasks.filter(t => t.status === 'pending').length) / tasks.length) * 100);
+  const progress = tasks.length === 0 ? 0 : Math.round(((tasks.length - tasks.filter(t => t.status === 'pending').length) / tasks.length) * 100);
 
   return (
     <div className="space-y-8 animate-fade-in pb-10 max-w-4xl mx-auto">

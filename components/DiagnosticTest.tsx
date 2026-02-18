@@ -90,7 +90,7 @@ const DiagnosticTest: React.FC<DiagnosticTestProps> = ({ studentName, onFinish }
   };
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
+    if (videoRef.current && canvasRef.current && videoRef.current.videoWidth > 0) {
       canvasRef.current.width = videoRef.current.videoWidth;
       canvasRef.current.height = videoRef.current.videoHeight;
       const ctx = canvasRef.current.getContext('2d');
@@ -126,16 +126,21 @@ const DiagnosticTest: React.FC<DiagnosticTestProps> = ({ studentName, onFinish }
 
   const submitTest = async () => {
     setIsSubmitting(true);
-    const payload = QUESTIONS.map(q => ({
-      question: q.text,
-      selected: answers[q.id] || "No Respondida",
-      correct: q.correct
-    }));
+    try {
+      const payload = QUESTIONS.map(q => ({
+        question: q.text,
+        selected: answers[q.id] || "No Respondida",
+        correct: q.correct
+      }));
 
-    // AI Analysis + Curriculum Generation (Sending Image if available)
-    const aiResult = await evaluateMathDiagnostic(studentName, payload, workImage || undefined);
-    setResult(aiResult);
-    setIsSubmitting(false);
+      // AI Analysis + Curriculum Generation (Sending Image if available)
+      const aiResult = await evaluateMathDiagnostic(studentName, payload, workImage || undefined);
+      setResult(aiResult);
+    } catch (err) {
+      console.error("Diagnostic submission failed:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleStartRemedial = () => {

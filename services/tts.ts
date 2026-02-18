@@ -11,14 +11,14 @@ export interface TTSSettings {
 }
 
 class TTSService {
-    private synth: SpeechSynthesis;
+    private synth: SpeechSynthesis | null;
     private utterance: SpeechSynthesisUtterance | null = null;
     private settings: TTSSettings;
     private isSupported: boolean;
 
     constructor() {
-        this.synth = window.speechSynthesis;
-        this.isSupported = 'speechSynthesis' in window;
+        this.isSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+        this.synth = this.isSupported ? window.speechSynthesis : null;
         
         // Default settings for age 8
         this.settings = this.getAgeAdaptiveSettings(8, 'es');
@@ -65,7 +65,7 @@ class TTSService {
 
     // Get available voices
     getAvailableVoices(): SpeechSynthesisVoice[] {
-        if (!this.isSupported) return [];
+        if (!this.isSupported || !this.synth) return [];
         return this.synth.getVoices();
     }
 
@@ -127,33 +127,33 @@ class TTSService {
         };
 
         // Speak
-        this.synth.speak(this.utterance);
+        this.synth!.speak(this.utterance);
     }
 
     // Stop current speech
     stop() {
-        if (this.isSupported && this.synth.speaking) {
+        if (this.isSupported && this.synth && this.synth.speaking) {
             this.synth.cancel();
         }
     }
 
     // Pause current speech
     pause() {
-        if (this.isSupported && this.synth.speaking) {
+        if (this.isSupported && this.synth && this.synth.speaking) {
             this.synth.pause();
         }
     }
 
     // Resume paused speech
     resume() {
-        if (this.isSupported && this.synth.paused) {
+        if (this.isSupported && this.synth && this.synth.paused) {
             this.synth.resume();
         }
     }
 
     // Check if currently speaking
     isSpeaking(): boolean {
-        return this.isSupported && this.synth.speaking;
+        return this.isSupported && !!this.synth && this.synth.speaking;
     }
 
     // Check if TTS is supported
