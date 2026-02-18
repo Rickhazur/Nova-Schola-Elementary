@@ -2,7 +2,7 @@
 // Client-side service to interact with the /api/chat proxy
 
 // Helper for non-streaming calls
-async function callChatApi(messages: any[], model: string = "gpt-4o", jsonMode: boolean = false) {
+async function callChatApi(messages: any[], model: string = "gemini-2.0-flash", jsonMode: boolean = false) {
     try {
         const body: any = {
             messages,
@@ -51,7 +51,7 @@ export class OpenAITutorSession {
         try {
             const body = {
                 messages: this.messages,
-                model: "gpt-4o",
+                model: "gemini-2.0-flash",
                 tools: [{
                     type: "function",
                     function: {
@@ -139,7 +139,7 @@ export async function* streamConsultation(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 messages,
-                model: 'gpt-4o',
+                model: 'gemini-2.0-flash',
                 stream: true
             })
         });
@@ -186,7 +186,7 @@ export async function evaluateMathDiagnostic(studentName: string, questions: any
 
     const data = await callChatApi(
         [{ role: "system", content: sysPrompt }, { role: "user", content: content }],
-        "gpt-4o",
+        "gemini-2.0-flash",
         true
     );
 
@@ -204,7 +204,7 @@ export async function generateRemedialPlan(reportText: string) {
     const sysPrompt = "Act as an Educational Strategist. Create a remedial plan based on the teacher's report. Return JSON matching the Subject interface structure (id, name, tracks[0].modules[0].classes...).";
     const data = await callChatApi(
         [{ role: "system", content: sysPrompt }, { role: "user", content: reportText }],
-        "gpt-4o",
+        "gemini-2.0-flash",
         true
     );
     try {
@@ -220,7 +220,7 @@ export async function generateFlashcards(topic: string) {
     const sysPrompt = "Create 5 educational flashcards. Return JSON: { cards: [{ front, back }] }";
     const data = await callChatApi(
         [{ role: "system", content: sysPrompt }, { role: "user", content: `Topic: ${topic}` }],
-        "gpt-4o",
+        "gemini-2.0-flash",
         true
     );
     let json: any;
@@ -240,7 +240,7 @@ export async function generateParentEmailReport(studentName: string, data: any) 
 
     const completion = await callChatApi(
         [{ role: "system", content: sysPrompt }, { role: "user", content: userPrompt }],
-        "gpt-4o"
+        "gemini-2.0-flash"
     );
     return completion.choices?.[0]?.message?.content ?? '';
 }

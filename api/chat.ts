@@ -3,7 +3,8 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.GEMINI_API_KEY,
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -24,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             res.setHeader('Connection', 'keep-alive');
 
             const streamResponse = await openai.chat.completions.create({
-                model: model || "gpt-4o-mini",
+                model: model || "gemini-2.0-flash",
                 messages,
                 tools,
                 tool_choice,
@@ -38,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             res.end();
         } else {
             const completion = await openai.chat.completions.create({
-                model: model || "gpt-4o-mini",
+                model: model || "gemini-2.0-flash",
                 messages,
                 tools,
                 tool_choice,
@@ -49,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
     } catch (err: any) {
-        console.error("OpenAI error:", err);
-        return res.status(500).json({ error: "Error calling OpenAI", details: err.message });
+        console.error("Gemini error:", err);
+        return res.status(500).json({ error: "Error calling Gemini", details: err.message });
     }
 }
