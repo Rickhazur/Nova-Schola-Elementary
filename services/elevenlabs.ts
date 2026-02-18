@@ -75,6 +75,9 @@ export async function generateSpeech(text: string): Promise<ArrayBuffer> {
         }
 
         const arrayBuffer = await response.arrayBuffer();
+        if (arrayBuffer.byteLength === 0) {
+            throw new Error('EMPTY_AUDIO_RESPONSE');
+        }
         console.log(
             `✅ [ElevenLabs] Received audio: ${arrayBuffer.byteLength} bytes`
         );

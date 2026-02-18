@@ -270,7 +270,7 @@ const DualWhiteboard: React.FC<DualWhiteboardProps> = ({ language, studentAge = 
         ctx.font = 'bold 24px Arial';
         ctx.fillStyle = '#4f46e5';
         ctx.textAlign = 'center';
-        ctx.fillText(`${labels.step} ${step}: ${problemSteps[step - 1]}`, canvas.width / 2, 60);
+        ctx.fillText(`${labels.step} ${step}: ${problemSteps[step - 1] ?? ''}`, canvas.width / 2, 60);
 
         // Draw example visual guide (simplified)
         ctx.strokeStyle = '#10B981';
@@ -293,7 +293,7 @@ const DualWhiteboard: React.FC<DualWhiteboardProps> = ({ language, studentAge = 
                             <h3 className="font-black text-xl text-purple-800">
                                 {labels.step} {currentStep} {labels.of} {problemSteps.length}
                             </h3>
-                            <p className="text-purple-600 font-bold">{problemSteps[currentStep - 1]}</p>
+                            <p className="text-purple-600 font-bold">{problemSteps[currentStep - 1] ?? ''}</p>
                         </div>
                     </div>
 

@@ -131,11 +131,12 @@ const RewardsStore: React.FC<RewardsStoreProps> = ({
                             <label className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2 mb-2">
                                 <Users className="w-4 h-4" /> Seleccionar Estudiante
                             </label>
-                            <select 
-                                value={selectedStudentId || ''} 
+                            <select
+                                value={selectedStudentId || ''}
                                 onChange={(e) => onSelectStudent && onSelectStudent(e.target.value)}
                                 className="w-full bg-stone-700 text-white rounded-lg px-4 py-3 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
                             >
+                                <option value="" disabled>Seleccionar estudiante...</option>
                                 {studentsList.map(student => (
                                     <option key={student.uid} value={student.uid}>
                                         {student.name} ({student.email})

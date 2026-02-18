@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Volume2, VolumeX, Pause, Play, RotateCcw } from 'lucide-react';
 import ttsService from '../services/tts';
 import { Language } from '../types';
@@ -27,7 +27,7 @@ const TTSControls: React.FC<TTSControlsProps> = ({
         if (autoPlay && text) {
             playText();
         }
-    }, [text, autoPlay]);
+    }, [text, autoPlay, playText]);
 
     useEffect(() => {
         // Update TTS settings when age or language changes
@@ -35,20 +35,20 @@ const TTSControls: React.FC<TTSControlsProps> = ({
         ttsService.updateSettings(studentAge, lang);
     }, [studentAge, language]);
 
-    const playText = () => {
+    const playText = useCallback(() => {
         if (!text) return;
 
         const lang = language === 'bilingual' ? 'es' : language;
         ttsService.updateSettings(studentAge, lang);
-        
+
         setIsPlaying(true);
         setIsPaused(false);
-        
+
         ttsService.speak(text, () => {
             setIsPlaying(false);
             if (onEnd) onEnd();
         });
-    };
+    }, [text, language, studentAge, onEnd]);
 
     const handlePlayPause = () => {
         if (isPlaying && !isPaused) {

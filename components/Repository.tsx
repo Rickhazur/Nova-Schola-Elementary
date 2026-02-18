@@ -109,7 +109,7 @@ const Repository: React.FC<RepositoryProps> = ({ studentName, onUploadHomework, 
         } else {
             // Get current user ID from Supabase session if student
             const { data } = await supabase?.auth.getSession() || { data: { session: null } };
-            if (data.session) setCurrentStudentId(data.session.user.id);
+            if (data.session?.user) setCurrentStudentId(data.session.user.id);
         }
     };
     init();

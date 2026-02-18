@@ -20,6 +20,10 @@ function sanitizeSvgCode(rawSvg: string): string {
   final = final.replace(/width="[^"]*"/gi, '');
   final = final.replace(/height="[^"]*"/gi, '');
 
+  // Strip event handler attributes to prevent XSS from AI-generated SVG
+  final = final.replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '');
+  final = final.replace(/\s+on\w+\s*=\s*'[^']*'/gi, '');
+
   if (!final.includes('viewBox')) {
     final = final.replace('<svg', '<svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet"');
   } else {
@@ -122,6 +126,7 @@ const LiveClassroom: React.FC<LiveClassroomProps> = ({ session, studentName, onE
   };
 
   const initSession = async () => {
+    if (status !== 'idle') return;
     setStatus('connecting');
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY || (process as any).env?.VITE_OPENAI_API_KEY;
 
@@ -274,7 +279,7 @@ const LiveClassroom: React.FC<LiveClassroomProps> = ({ session, studentName, onE
                   ))}
                 </div>
                 <div className="w-px h-10 bg-stone-200"></div>
-                <button onClick={() => canvasRef.current?.getContext('2d')?.clearRect(0, 0, 9999, 9999)} className="p-4 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all">
+                <button onClick={() => { const c = canvasRef.current; c?.getContext('2d')?.clearRect(0, 0, c.width, c.height); }} className="p-4 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all">
                   <Trash2 className="w-7 h-7" />
                 </button>
               </div>
@@ -307,10 +312,10 @@ const LiveClassroom: React.FC<LiveClassroomProps> = ({ session, studentName, onE
               <canvas
                 ref={canvasRef}
                 className="absolute inset-0 w-full h-full z-10 cursor-crosshair touch-none"
-                onMouseDown={e => { isDrawing.current = true; const r = canvasRef.current!.getBoundingClientRect(); lastPos.current = { x: e.clientX - r.left, y: e.clientY - r.top }; }}
+                onMouseDown={e => { isDrawing.current = true; const r = canvasRef.current?.getBoundingClientRect(); if (!r) return; lastPos.current = { x: e.clientX - r.left, y: e.clientY - r.top }; }}
                 onMouseMove={draw}
                 onMouseUp={() => isDrawing.current = false}
-                onTouchStart={e => { isDrawing.current = true; const r = canvasRef.current!.getBoundingClientRect(); lastPos.current = { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top }; }}
+                onTouchStart={e => { isDrawing.current = true; const r = canvasRef.current?.getBoundingClientRect(); if (!r) return; lastPos.current = { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top }; }}
                 onTouchMove={draw}
                 onTouchEnd={() => isDrawing.current = false}
               />

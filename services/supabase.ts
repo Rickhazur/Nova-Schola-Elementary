@@ -119,15 +119,19 @@ export const adminAwardCoins = async (studentId: string, amount: number) => {
   if (!supabase) return false;
 
   const { data: current } = await supabase.from("economy").select("coins").eq("user_id", studentId).single();
-  const newTotal = (current?.coins || 0) + amount;
+  const currentCoins = current?.coins || 0;
+  const newTotal = currentCoins + amount;
 
-  const { error } = await supabase
+  // Optimistic locking: only update if coins haven't changed since we read them
+  const { data: updated, error } = await supabase
     .from("economy")
     .update({ coins: newTotal, last_updated: new Date().toISOString() })
-    .eq("user_id", studentId);
+    .eq("user_id", studentId)
+    .eq("coins", currentCoins)
+    .select('coins');
 
-  if (error) {
-    console.error('Error coins:', error);
+  if (error || !updated || updated.length === 0) {
+    console.error('Error coins:', error || 'Concurrent modification detected');
     return false;
   }
   return true;

@@ -46,11 +46,13 @@ const AIConsultant: React.FC = () => {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [usePremiumVoice, setUsePremiumVoice] = useState(true); // Default to True for best experience
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Load voices
   useEffect(() => {
+    if (!('speechSynthesis' in window)) return;
     const loadVoices = () => {
       const available = window.speechSynthesis.getVoices();
       setVoices(available);
@@ -67,7 +69,11 @@ const AIConsultant: React.FC = () => {
         audioRef.current.pause();
         audioRef.current = null;
       }
-      window.speechSynthesis.cancel();
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     };
   }, []);
 
@@ -152,12 +158,14 @@ const AIConsultant: React.FC = () => {
             const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
             const url = URL.createObjectURL(blob);
             setAudioUrl(url);
+            audioUrlRef.current = url;
 
             const audio = new Audio(url);
             audioRef.current = audio;
             audio.onended = () => {
               setIsSpeaking(false);
               URL.revokeObjectURL(url);
+              audioUrlRef.current = null;
             };
             audio.play();
             return; // Success, exit function
@@ -270,10 +278,11 @@ const AIConsultant: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
+    // Declared before try so the catch block can reference it
+    const modelMsgId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, { id: modelMsgId, role: 'model', text: '', isThinking: true }]);
+
     try {
-      // Create a temporary model message for streaming
-      const modelMsgId = (Date.now() + 1).toString();
-      setMessages(prev => [...prev, { id: modelMsgId, role: 'model', text: '', isThinking: true }]);
 
       const stream = await streamConsultation(
         messages.map(m => ({ role: m.role, text: m.text, image: m.image })),
@@ -318,6 +327,11 @@ const AIConsultant: React.FC = () => {
 
     } catch (error) {
       console.error("Chat error", error);
+      setMessages(prev => prev.map(msg =>
+        msg.id === modelMsgId
+          ? { ...msg, text: 'Lo siento, ocurrió un error al procesar tu solicitud. Intenta de nuevo.', isThinking: false }
+          : msg
+      ));
     } finally {
       setIsLoading(false);
     }

@@ -86,6 +86,10 @@ const Progress: React.FC<ProgressProps> = ({
     // Tools State
     const [awardAmount, setAwardAmount] = useState(50);
 
+    // STUDENT VIEW STATE — must be at top level to comply with Rules of Hooks
+    const [studentProgressData, setStudentProgressData] = useState<any>(null);
+    const [isLoadingProgress, setIsLoadingProgress] = useState(userRole === 'STUDENT');
+
     // INIT
     useEffect(() => {
         const initConfig = async () => {
@@ -152,6 +156,17 @@ const Progress: React.FC<ProgressProps> = ({
         };
         loadStudentData();
     }, [currentStudentId, userRole, userId]);
+
+    // LOAD STUDENT PROGRESS SUMMARY (student view only)
+    useEffect(() => {
+        if (userRole !== 'STUDENT' || !userId) return;
+        import('../services/supabase').then(async ({ getStudentProgressSummary, getStudentProgress }) => {
+            const summary = await getStudentProgressSummary(userId);
+            const sessions = await getStudentProgress(userId);
+            setStudentProgressData({ summary, sessions });
+            setIsLoadingProgress(false);
+        });
+    }, [userId, userRole]);
 
     // ACTIONS
     const handleAwardCoins = async () => {
@@ -497,20 +512,6 @@ const Progress: React.FC<ProgressProps> = ({
 
     // STUDENT VIEW
     if (userRole === 'STUDENT') {
-        const [studentProgressData, setStudentProgressData] = useState<any>(null);
-        const [isLoadingProgress, setIsLoadingProgress] = useState(true);
-
-        useEffect(() => {
-            if (userId) {
-                import('../services/supabase').then(async ({ getStudentProgressSummary, getStudentProgress }) => {
-                    const summary = await getStudentProgressSummary(userId);
-                    const sessions = await getStudentProgress(userId);
-                    setStudentProgressData({ summary, sessions });
-                    setIsLoadingProgress(false);
-                });
-            }
-        }, [userId]);
-
         if (isLoadingProgress) return <div className="text-center p-20"><RefreshCw className="animate-spin" /></div>;
 
         const summary = studentProgressData?.summary;

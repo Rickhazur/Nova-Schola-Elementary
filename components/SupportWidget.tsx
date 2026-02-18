@@ -22,7 +22,7 @@ const SupportWidget: React.FC<SupportWidgetProps> = ({ userId, userName, userRol
         setShowToast(msg);
         setTimeout(() => setShowToast(null), 8000);
     });
-    return () => unsubscribe();
+    return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
   }, [userId]);
 
   const handleSendSupport = async (e: React.FormEvent) => {

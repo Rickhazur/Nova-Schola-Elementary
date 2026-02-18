@@ -56,7 +56,7 @@ const TestingCenter: React.FC<TestingCenterProps> = ({ isOpen, onClose, onSimula
                   <Database className="w-3 h-3" /> Probar Conexión
                 </button>
                 {connectionStatus && (
-                  <span className={`text-xs font-bold ${connectionStatus.includes('Exitosa') ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <span className={`text-xs font-bold ${connectionStatus.toLowerCase().includes('exitosa') ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {connectionStatus}
                   </span>
                 )}

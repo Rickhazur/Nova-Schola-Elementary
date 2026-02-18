@@ -115,7 +115,7 @@ const SocialHub: React.FC = () => {
               </div>
             </div>
             <div className="mt-6 w-full bg-black/40 rounded-full h-4 border-2 border-black/20 p-1">
-              <div className="bg-kid-yellow h-FULL rounded-full border border-black" style={{ width: '0%', height: '100%' }}></div>
+              <div className="bg-kid-yellow h-full rounded-full border border-black" style={{ width: '0%', height: '100%' }}></div>
             </div>
             <div className="flex justify-between text-xs mt-2 font-black text-white uppercase tracking-wider">
               <span>Tu progreso</span>
