@@ -4,7 +4,8 @@ import {
 } from 'lucide-react';
 import { Subject, ClassSession, Language } from '../types';
 import { OpenAITutorSession } from '../services/openai';
-import { generateSpeech } from '../services/elevenlabs';
+import { generateSpeech, getElevenLabsKey } from '../services/elevenlabs';
+import ttsService from '../services/tts';
 
 // --- HELPERS ---
 function sanitizeSvgCode(rawSvg: string): string {
@@ -76,29 +77,39 @@ const LiveClassroom: React.FC<LiveClassroomProps> = ({ session, studentName, onE
     }
   }, [status]);
 
-  // Audio & Speech Logic
+  // Audio & Speech Logic — uses ElevenLabs if key is set, otherwise falls back to free Web Speech API
   const playAudio = async (text: string) => {
-    try {
-      setIsSpeaking(true);
-      const audioBuffer = await generateSpeech(text);
-      if (!audioBuffer) return;
+    setIsSpeaking(true);
 
-      const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
+    // Try ElevenLabs only when a key is configured
+    if (getElevenLabsKey()) {
+      try {
+        const audioBuffer = await generateSpeech(text);
+        if (!audioBuffer) throw new Error('empty buffer');
 
-      audio.onended = () => {
-        setIsSpeaking(false);
-        URL.revokeObjectURL(url);
-        startListening(); // Auto-listen after speaking
-      };
+        const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
 
-      await audio.play();
-    } catch (e) {
-      console.error("Audio Playback Error:", e);
+        audio.onended = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(url);
+          startListening();
+        };
+
+        await audio.play();
+        return;
+      } catch (e) {
+        console.warn("ElevenLabs failed, falling back to Web Speech API:", e);
+      }
+    }
+
+    // Free fallback: browser Web Speech API (the voices already loaded)
+    ttsService.updateSettings(8, language);
+    ttsService.speak(text, () => {
       setIsSpeaking(false);
       startListening();
-    }
+    });
   };
 
   const startListening = () => {
