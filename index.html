@@ -13,22 +13,28 @@
 
   <!-- No importmap needed; Vite bundles all dependencies -->
 
-  <!-- Unregister stale service workers and clear old caches.
-       A previous build registered a SW that caches old JS chunks (e.g.
-       MathTutor-B0aq64cR.js). Those stale chunks cause runtime errors when
-       the app has been rebuilt but the SW keeps serving old files. -->
+  <!-- SW Nuke: kill any stale service worker (e.g. the old sw.js?v=1.2.0 that
+       cached MathTutor-B0aq64cR.js). If an old SW is found we unregister it,
+       wipe all caches, then force ONE clean reload so the app boots without
+       any stale files. The second load finds no SW → skips → works normally. -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (var reg of registrations) {
-          reg.unregister();
-          console.log('[Nova] Unregistered stale SW:', reg.scope);
-        }
-      });
-      caches.keys().then(function(cacheNames) {
-        cacheNames.forEach(function(name) {
-          caches.delete(name);
-          console.log('[Nova] Cleared cache:', name);
+        if (registrations.length === 0) return; // already clean
+
+        console.log('[Nova] Found ' + registrations.length + ' stale SW(s) — nuking...');
+        Promise.all(registrations.map(function(reg) {
+          return reg.unregister();
+        })).then(function() {
+          return caches.keys().then(function(names) {
+            return Promise.all(names.map(function(name) {
+              console.log('[Nova] Clearing cache:', name);
+              return caches.delete(name);
+            }));
+          });
+        }).then(function() {
+          console.log('[Nova] Done. Reloading for a clean start.');
+          window.location.reload();
         });
       });
     }
